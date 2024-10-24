@@ -55,7 +55,7 @@ async def submit_question(request: QuestionRequest, api_key: str = Depends(verif
     # Здесь вы можете добавить логику обработки запроса
     gemini_key = read_config('GEMINI_KEY').strip()
     genai.configure(api_key=gemini_key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-1.0-pro')
     keywords = {
         "ru": ["пасспорт", "заявление", "регистрация", "патент", "мигрант", "рвп", "внж", "гражданство", "миграционный"],
         "tj": ["паспор", "дархост", "сабт", "патент", "механик", "рвп", "внж", "гражданӣ", "мигратсионӣ"],
