@@ -41,26 +41,25 @@ async def submit_question(request: QuestionRequest, api_key: str = Depends(verif
     # Здесь вы можете добавить логику обработки запроса
     gemini_key = read_config('GEMINI_KEY').strip()
     genai.configure(api_key=gemini_key)
-    model = genai.GenerativeModel('gemini-pro')
-    print("Gemini Key: ", gemini_key)
+    model = genai.GenerativeModel('gemini-1.5-flash')
     keywords = {
         "ru": ["пасспорт", "заявление", "регистрация", "патент", "мигрант", "рвп", "внж", "гражданство", "миграционный"],
         "tj": ["паспор", "дархост", "сабт", "патент", "механик", "рвп", "внж", "гражданӣ", "мигратсионӣ"],
-        "uz": ["паспорт", "ариза", "ройхатга олиш", "патент", "мигрант", "рвп", "внж", "гражданлик", "миграция"],
-        "uz_latin": ["pasport", "ariza", "ro'yxatga olish", "patent", "migrant", "rvp", "vnj", "fuqarolik", "migratsiya"]
+        "uz": ["паспорт", "ариза", "ройхатга олиш", "патент", "мигрант", "рвп", "внж", "гражданлик", "миграция", "pasport", "ariza", "ro'yxatga olish", "patent", "migrant", "rvp", "vnj", "fuqarolik", "migratsiya"]
     }
     if request.lang not in keywords:
         raise HTTPException(status_code=400, detail="Unsupported language")
     if not any(keyword in request.question.lower() for keyword in keywords[request.lang]):
         raise HTTPException(status_code=400, detail=f"Question must contain one of the keywords: {', '.join(keywords[request.lang])}")
-    if request.lang == 'tj':
-        auxiliary_text = " То ҳадди имкон равшан ва ҳамаҷониба ҷавоб диҳед. Лутфан истинодҳои муфидро аз порталҳои давлатӣ пешниҳод кунед. Ҷавоби худро бо забони тоҷикӣ диҳед."
-    elif request.lang == 'uz':
-        auxiliary_text = " Iloji boricha aniq va to'liq javob bering. Iltimos, davlat portallaridan foydali havolalarni taqdim eting. Javobingizni tojik tilida bering."
-    else:
-        auxiliary_text = " Ответь максимально понятно и развернуто, и не забудь указать ссылки на полезные ресурсы."
+    auxiliary_text = {
+        'tj': " То ҳадди имкон равшан ва ҳамаҷониба ҷавоб диҳед. Лутфан истинодҳои муфидро аз порталҳои давлатӣ пешниҳод кунед. Ҷавоби худро бо забони тоҷикӣ диҳед.",
+        'uz': " Iloji boricha aniq va to'liq javob bering. Iltimos, davlat portallaridan foydali havolalarni taqdim eting. Javobingizni tojik tilida bering.",
+        'ru': " Ответь максимально понятно и развернуто, и не забудь указать ссылки на полезные ресурсы."
+    }
     try:
-        response = model.generate_content(request.question + auxiliary_text)
+        response = model.generate_content(
+            request.question + auxiliary_text.get(request.lang, "")
+        )
     except Exception as e:
         print(e)
         return HTTPException(status_code=400, detail="Error While request to gemini")
