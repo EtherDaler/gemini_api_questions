@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Header, Depends
 from pydantic import BaseModel
 import PIL.Image
 import google.generativeai as genai
@@ -13,6 +13,13 @@ def read_config(key: str):
                 start = line.find("=")
                 return line[start+1:]
     return None
+
+
+# Делаем зависимость для проверки API ключа
+def verify_api_key(api_key: str = Header(...)):
+    key = read_config("API_KEY")
+    if api_key != key:
+        raise HTTPException(status_code=403, detail="Invalid API key")
 
 
 class QuestionRequest(BaseModel):
@@ -30,7 +37,7 @@ async def home():
 
 
 @app.post("/question")
-async def submit_question(request: QuestionRequest):
+async def submit_question(request: QuestionRequest, api_key: str = Depends(verify_api_key)):
     # Здесь вы можете добавить логику обработки запроса
     gemini_key = read_config('GEMINI_KEY').strip()
     genai.configure(api_key=gemini_key)
@@ -68,7 +75,7 @@ async def submit_question(request: QuestionRequest):
 
 
 @app.post("/image_recognition")
-async def read_image(image: UploadFile = File(...)):
+async def read_image(image: UploadFile = File(...), api_key: str = Depends(verify_api_key)):
     gemini_key = read_config('GEMINI_KEY').strip()
     genai.configure(api_key=gemini_key)
     model_with_image = genai.GenerativeModel('gemini-1.5-flash')
