@@ -17,7 +17,7 @@ def read_config(key: str):
 
 # Делаем зависимость для проверки API ключа
 def verify_api_key(api_key: str = Header(...)):
-    key = read_config("API_KEY")
+    key = read_config("API_KEY").strip()
     if api_key != key:
         raise HTTPException(status_code=403, detail="Invalid API key")
 
