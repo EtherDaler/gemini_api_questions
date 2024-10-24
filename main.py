@@ -1,9 +1,23 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, Header, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import PIL.Image
 import google.generativeai as genai
 
 app = FastAPI()
+
+
+origins = [
+    "*",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def read_config(key: str):
