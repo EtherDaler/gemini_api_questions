@@ -86,9 +86,10 @@ async def submit_question(request: QuestionRequest, api_key: str = Depends(verif
 
         headers = {
             "Authorization": f"Bearer {gemini_key}",
-            "User-Agent": ua.getRandom,
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
             "Content-Type": "application/x-www-form-urlencoded",  # Если тело запроса не в формате JSON
-            "Accept": "*/*"
+            "Accept": "*/*",
+            "Connection": "keep-alive",
         }
 
         # Пример отправки POST-запроса с принудительным использованием HTTP/1.1
