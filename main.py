@@ -4,6 +4,10 @@ from pydantic import BaseModel
 import PIL.Image
 import requests
 import google.generativeai as genai
+from fake_useragent import UserAgent
+
+
+ua = UserAgent()
 
 app = FastAPI()
 
@@ -82,7 +86,9 @@ async def submit_question(request: QuestionRequest, api_key: str = Depends(verif
 
         headers = {
             "Authorization": f"Bearer {gemini_key}",
-            "User-Agent": "YourAppName/1.0"
+            "User-Agent": ua.getRandom,
+            "Content-Type": "application/x-www-form-urlencoded",  # Если тело запроса не в формате JSON
+            "Accept": "*/*"
         }
 
         # Пример отправки POST-запроса с принудительным использованием HTTP/1.1
