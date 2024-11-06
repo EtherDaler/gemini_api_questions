@@ -82,23 +82,23 @@ async def submit_question(request: QuestionRequest, api_key: str = Depends(verif
     except Exception as e:
         print(e)
         # Теперь отправим запрос через requests с использованием HTTP/1.1
-        url = "https://gemini-api-url.com"  # URL Gemini API
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={gemini_key}"  # URL Gemini API
 
         headers = {
             "Authorization": f"Bearer {gemini_key}",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-            "Content-Type": "application/x-www-form-urlencoded",  # Если тело запроса не в формате JSON
+            "Content-Type": "application/json",  # Если тело запроса не в формате JSON
             "Accept": "*/*",
             "Connection": "keep-alive",
         }
+        data = {"contents":[{"parts":[{"text":request.question}]}]}
 
         # Пример отправки POST-запроса с принудительным использованием HTTP/1.1
         try:
             response = requests.post(
                 url,
                 headers=headers,
-                data={"question": request.question, "lang": request.lang},
-                timeout=10,
+                data=data,
                 allow_redirects=True
             )
             response.raise_for_status()  # Проверка на ошибки HTTP
