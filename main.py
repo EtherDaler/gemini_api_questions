@@ -2,6 +2,7 @@ from fastapi import FastAPI, File, UploadFile, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import PIL.Image
+import requests
 import google.generativeai as genai
 
 app = FastAPI()
@@ -76,7 +77,28 @@ async def submit_question(request: QuestionRequest, api_key: str = Depends(verif
         )
     except Exception as e:
         print(e)
-        return HTTPException(status_code=400, detail="Error While request to gemini")
+        # Теперь отправим запрос через requests с использованием HTTP/1.1
+        url = "https://gemini-api-url.com"  # URL Gemini API
+
+        headers = {
+            "Authorization": f"Bearer {gemini_key}",
+            "User-Agent": "YourAppName/1.0"
+        }
+
+        # Пример отправки POST-запроса с принудительным использованием HTTP/1.1
+        try:
+            response = requests.post(
+                url,
+                headers=headers,
+                data={"question": request.question, "lang": request.lang},
+                timeout=10,
+                allow_redirects=True
+            )
+            response.raise_for_status()  # Проверка на ошибки HTTP
+            result = response.json()  # Преобразование ответа в JSON
+        except requests.exceptions.RequestException as e:
+            print(f"Request error: {e}")
+            return HTTPException(status_code=500, detail="Error While request to gemini")
 
     # Пример ответа
     return {
