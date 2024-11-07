@@ -1,11 +1,13 @@
 import PIL.Image
 import requests
+import base64
+import google.generativeai as genai
+
 
 from openai import OpenAI
 from fastapi import FastAPI, File, UploadFile, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import google.generativeai as genai
 from fake_useragent import UserAgent
 
 
@@ -121,17 +123,24 @@ async def submit_question(request: QuestionRequest, api_key: str = Depends(verif
     # Пример ответа
     return {
         "message": "Question received successfully",
-        "question": request.question,
+        "question": request.question + auxiliary_text.get(request.lang, ""),
         "lang": request.lang,
         "answer": answer
     }
 
 
+def encode_image64(image_path):
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode("utf-8")
+
+
 @app.post("/image_recognition")
 async def read_image(image: UploadFile = File(...), api_key: str = Depends(verify_api_key)):
     gemini_key = read_config('GEMINI_KEY').strip()
-    genai.configure(api_key=gemini_key)
-    model_with_image = genai.GenerativeModel('gemini-1.5-flash')
+    gpt_key = read_config('GPT_KEY').strip()
+    client = OpenAI(api_key=gpt_key)
+    #genai.configure(api_key=gemini_key)
+    #model_with_image = genai.GenerativeModel('gemini-1.5-flash')
     try:
         contents = await image.read()
         with open(f"uploads/{image.filename}", "wb") as f:
@@ -143,13 +152,25 @@ async def read_image(image: UploadFile = File(...), api_key: str = Depends(verif
     try:
         photo = f"uploads/{image.filename}"
         image = PIL.Image.open(photo)
-        response = model_with_image.generate_content(["Прочитай и пришли данные с документа", image])
+        base64_image = encode_image64(photo)
+        #response = model_with_image.generate_content(["Прочитай и пришли данные с документа", image])
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "Ты помощник, который считывает текст с изображений и возвращает его."},
+                {"role": "user", "content": [
+                    {"type": "text", "text": "Выведи пасспортные данные с изображения."},
+                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}
+                    }
+                ]}
+            ],
+            temperature = 0.0
+        )
         if response and hasattr(response, 'text'):
-            return {"data": response.text}
+            return {"data": response.choices[0].message.content}
         else:
             return {"error": "No valid response text returned from the model."}
     except Exception as e:
         print(e)
         return HTTPException(status_code=400, detail="Failed response from gemini")
-    return {"data": response.text}
 
