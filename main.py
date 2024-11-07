@@ -61,7 +61,7 @@ async def home():
 async def submit_question(request: QuestionRequest, api_key: str = Depends(verify_api_key)):
     # Здесь вы можете добавить логику обработки запроса
     openai.api_key = read_config('GPT_KEY').strip()
-    #gemini_key = read_config('GEMINI_KEY').strip()
+    gemini_key = read_config('GEMINI_KEY').strip()
     #genai.configure(api_key=gemini_key)
     #model = genai.GenerativeModel('gemini-1.0-pro')
     keywords = {
