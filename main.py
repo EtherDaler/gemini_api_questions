@@ -166,10 +166,7 @@ async def read_image(image: UploadFile = File(...), api_key: str = Depends(verif
             ],
             temperature = 0.0
         )
-        if response and hasattr(response, 'text'):
-            return {"data": response.choices[0].message.content}
-        else:
-            return {"error": "No valid response text returned from the model."}
+        return {"data": response.choices[0].message.content}
     except Exception as e:
         print(e)
         return HTTPException(status_code=400, detail="Failed response from gemini")
