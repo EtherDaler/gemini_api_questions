@@ -69,12 +69,16 @@ async def submit_question(request: QuestionRequest, api_key: str = Depends(verif
     #model = genai.GenerativeModel('gemini-1.0-pro')
     keywords = {
         "ru": ["пасспорт", "заявление", "регистрация", "патент", "мигрант", "рвп", "внж", "гражданство", "миграционный"],
-        "tj": ["паспор", "дархост", "сабт", "патент", "механик", "рвп", "внж", "гражданӣ", "мигратсионӣ"],
+        "tj": ["паспор", "дархост", "сабт", "бақайдгирӣ", "патент", "механик", "рвп", "внж", "гражданӣ", "мигратсионӣ"],
         "uz": ["паспорт", "ариза", "ройхатга олиш", "патент", "мигрант", "рвп", "внж", "гражданлик", "миграция", "pasport", "ariza", "ro'yxatga olish", "patent", "migrant", "rvp", "vnj", "fuqarolik", "migratsiya"]
     }
+    k_ar = list()
+    for lang in keywords.keys():
+        k_ar += keywords[lang]
+    print(k_ar)
     if request.lang not in keywords:
         raise HTTPException(status_code=400, detail="Unsupported language")
-    if not any(keyword in request.question.lower() for keyword in keywords[request.lang]):
+    if not any(keyword in request.question.lower() for keyword in k_ar):
         raise HTTPException(status_code=400, detail=f"Question must contain one of the keywords: {', '.join(keywords[request.lang])}")
     auxiliary_text = {
         'tj': " То ҳадди имкон равшан ва ҳамаҷониба ҷавоб диҳед. Лутфан истинодҳои муфидро аз порталҳои давлатӣ пешниҳод кунед. Ҷавоби худро бо забони тоҷикӣ диҳед.",
