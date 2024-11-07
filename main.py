@@ -1,7 +1,7 @@
 import PIL.Image
 import requests
-import openai
 
+from openai import OpenAI
 from fastapi import FastAPI, File, UploadFile, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -60,7 +60,8 @@ async def home():
 @app.post("/question")
 async def submit_question(request: QuestionRequest, api_key: str = Depends(verify_api_key)):
     # Здесь вы можете добавить логику обработки запроса
-    openai.api_key = read_config('GPT_KEY').strip()
+    gpt_key = read_config('GPT_KEY').strip()
+    client = OpenAI(api_key=gpt_key)
     gemini_key = read_config('GEMINI_KEY').strip()
     #genai.configure(api_key=gemini_key)
     #model = genai.GenerativeModel('gemini-1.0-pro')
@@ -82,15 +83,15 @@ async def submit_question(request: QuestionRequest, api_key: str = Depends(verif
         #response = model.generate_content(
         #    request.question + auxiliary_text.get(request.lang, "")
         #)
-        response = openai.ChatCompletion.create(
-            model="gpt-4",  # Использование модели GPT-4
+        response = client.chat.completions.create(
+            model="gpt-4o",  # Использование модели GPT-4
             messages=[
                 {"role": "system", "content": "Ты — эксперт в области документов и миграции."},
                 {"role": "user", "content": request.question + auxiliary_text.get(request.lang, "")}
             ],
             max_tokens=100  # Максимальное количество токенов для ответа
         )
-        answer = response['choices'][0]['message']['content']
+        answer = response.choices[0].message.content.strip()
     except Exception as e:
         print(e)
         # Теперь отправим запрос через requests с использованием HTTP/1.1
