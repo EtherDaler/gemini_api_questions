@@ -1,8 +1,10 @@
+import PIL.Image
+import requests
+import openai
+
 from fastapi import FastAPI, File, UploadFile, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import PIL.Image
-import requests
 import google.generativeai as genai
 from fake_useragent import UserAgent
 
@@ -58,9 +60,10 @@ async def home():
 @app.post("/question")
 async def submit_question(request: QuestionRequest, api_key: str = Depends(verify_api_key)):
     # Здесь вы можете добавить логику обработки запроса
-    gemini_key = read_config('GEMINI_KEY').strip()
-    genai.configure(api_key=gemini_key)
-    model = genai.GenerativeModel('gemini-1.0-pro')
+    openai.api_key = read_config('GPT_KEY').strip()
+    #gemini_key = read_config('GEMINI_KEY').strip()
+    #genai.configure(api_key=gemini_key)
+    #model = genai.GenerativeModel('gemini-1.0-pro')
     keywords = {
         "ru": ["пасспорт", "заявление", "регистрация", "патент", "мигрант", "рвп", "внж", "гражданство", "миграционный"],
         "tj": ["паспор", "дархост", "сабт", "патент", "механик", "рвп", "внж", "гражданӣ", "мигратсионӣ"],
@@ -76,20 +79,27 @@ async def submit_question(request: QuestionRequest, api_key: str = Depends(verif
         'ru': " Ответь максимально понятно и развернуто, и не забудь указать ссылки на полезные ресурсы."
     }
     try:
-        response = model.generate_content(
-            request.question + auxiliary_text.get(request.lang, "")
+        #response = model.generate_content(
+        #    request.question + auxiliary_text.get(request.lang, "")
+        #)
+        response = openai.ChatCompletion.create(
+            model="gpt-4",  # Использование модели GPT-4
+            messages=[
+                {"role": "system", "content": "Ты — эксперт в области документов и миграции."},
+                {"role": "user", "content": request.question + auxiliary_text.get(request.lang, "")}
+            ],
+            max_tokens=100  # Максимальное количество токенов для ответа
         )
+        answer = response['choices'][0]['message']['content']
     except Exception as e:
         print(e)
         # Теперь отправим запрос через requests с использованием HTTP/1.1
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={gemini_key}"  # URL Gemini API
 
         headers = {
-            "Authorization": f"Bearer {gemini_key}",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
             "Content-Type": "application/json",  # Если тело запроса не в формате JSON
             "Accept": "*/*",
-            "Connection": "keep-alive",
         }
         data = {"contents":[{"parts":[{"text":request.question}]}]}
 
@@ -102,7 +112,7 @@ async def submit_question(request: QuestionRequest, api_key: str = Depends(verif
                 allow_redirects=True
             )
             response.raise_for_status()  # Проверка на ошибки HTTP
-            result = response.json()  # Преобразование ответа в JSON
+            answer = response.json()['text']
         except requests.exceptions.RequestException as e:
             print(f"Request error: {e}")
             return HTTPException(status_code=500, detail="Error While request to gemini")
@@ -112,7 +122,7 @@ async def submit_question(request: QuestionRequest, api_key: str = Depends(verif
         "message": "Question received successfully",
         "question": request.question,
         "lang": request.lang,
-        "answer": response.text
+        "answer": answer
     }
 
 
