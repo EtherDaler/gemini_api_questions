@@ -95,7 +95,7 @@ async def submit_question(request: QuestionRequest, api_key: str = Depends(verif
                 {"role": "system", "content": "Ты — эксперт в области документов и миграции."},
                 {"role": "user", "content": request.question + auxiliary_text.get(request.lang, "")}
             ],
-            max_tokens=250  # Максимальное количество токенов для ответа
+            max_tokens=350  # Максимальное количество токенов для ответа
         )
         answer = response.choices[0].message.content.strip()
     except Exception as e:
