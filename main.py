@@ -50,6 +50,11 @@ class QuestionRequest(BaseModel):
     lang: str
 
 
+class FreeQuestionRequest(BaseModel):
+    question: str
+    context: str
+
+
 class ImageRequest(BaseModel):
     lang: str
 
@@ -61,7 +66,6 @@ async def home():
 
 @app.post("/question")
 async def submit_question(request: QuestionRequest, api_key: str = Depends(verify_api_key)):
-    # Здесь вы можете добавить логику обработки запроса
     gpt_key = read_config('GPT_KEY').strip()
     client = OpenAI(api_key=gpt_key)
     gemini_key = read_config('GEMINI_KEY').strip()
@@ -128,6 +132,53 @@ async def submit_question(request: QuestionRequest, api_key: str = Depends(verif
     return {
         "message": "Question received successfully",
         "question": request.question + auxiliary_text.get(request.lang, ""),
+        "lang": request.lang,
+        "answer": answer
+    }
+
+
+@app.post('/free_question')
+async def free_question(request: FreeQuestionRequest, api_key: str = Depends(verify_api_key)):
+    gpt_key = read_config('GPT_KEY').strip()
+    client = OpenAI(api_key=gpt_key)
+    gemini_key = read_config('GEMINI_KEY').strip()
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",  # Использование модели GPT-4
+            messages=[
+                {"role": "system", "content": request.context},
+                {"role": "user", "content": request.question}
+            ]
+        )
+        answer = response.choices[0].message.content.strip()
+    except Exception as e:
+        print(e)
+        # Теперь отправим запрос через requests с использованием HTTP/1.1
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={gemini_key}"  # URL Gemini API
+
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+            "Content-Type": "application/json",  # Если тело запроса не в формате JSON
+            "Accept": "*/*",
+        }
+        data = {"contents":[{"parts":[{"text":request.question}]}]}
+        try:
+            response = requests.post(
+                url,
+                headers=headers,
+                data=data,
+                allow_redirects=True
+            )
+            response.raise_for_status()  # Проверка на ошибки HTTP
+            answer = response.json()['text']
+        except requests.exceptions.RequestException as e:
+            print(f"Request error: {e}")
+            return HTTPException(status_code=500, detail="Error While request to gemini")
+
+    # Пример ответа
+    return {
+        "message": "Question received successfully",
+        "question": request.question,
         "lang": request.lang,
         "answer": answer
     }
