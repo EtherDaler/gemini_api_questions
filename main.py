@@ -6,6 +6,7 @@ import google.generativeai as genai
 
 from openai import OpenAI
 from fastapi import FastAPI, File, UploadFile, HTTPException, Header, Depends
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from fake_useragent import UserAgent
@@ -129,12 +130,15 @@ async def submit_question(request: QuestionRequest, api_key: str = Depends(verif
             return HTTPException(status_code=500, detail="Error While request to gemini")
 
     # Пример ответа
-    return {
+    return JSONResponse(
+        {
         "message": "Question received successfully",
         "question": request.question + auxiliary_text.get(request.lang, ""),
         "lang": request.lang,
         "answer": answer
-    }
+        },
+        status_code=200
+    )
 
 
 @app.post('/free_question')
@@ -176,11 +180,14 @@ async def free_question(request: FreeQuestionRequest, api_key: str = Depends(ver
             return HTTPException(status_code=500, detail="Error While request to gemini")
 
     # Пример ответа
-    return {
+    return JSONResponse(
+        {
         "message": "Question received successfully",
         "question": request.question,
         "answer": answer
-    }
+        },
+        status_code=200
+    )
 
 
 def encode_image64(image_path):
