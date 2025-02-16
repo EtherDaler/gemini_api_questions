@@ -179,7 +179,6 @@ async def free_question(request: FreeQuestionRequest, api_key: str = Depends(ver
     return {
         "message": "Question received successfully",
         "question": request.question,
-        "lang": request.lang,
         "answer": answer
     }
 
