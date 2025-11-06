@@ -56,6 +56,12 @@ class FreeQuestionRequest(BaseModel):
     context: str
 
 
+class QuestionWithHistory(BaseModel):
+    question: str
+    context: str
+    conversation_history: list[dict]
+
+
 class ImageRequest(BaseModel):
     lang: str
 
@@ -180,6 +186,36 @@ async def free_question(request: FreeQuestionRequest, api_key: str = Depends(ver
             return HTTPException(status_code=500, detail="Error While request to gemini")
 
     # Пример ответа
+    return JSONResponse(
+        {
+        "message": "Question received successfully",
+        "question": request.question,
+        "answer": answer
+        },
+        status_code=200
+    )
+
+
+@app.post("/question_with_history")
+async def free_question_with_history(request: QuestionWithHistory, api_key: str = Depends(verify_api_key)):
+    gpt_key = read_config('GPT_KEY').strip()
+    client = OpenAI(api_key=gpt_key)
+    conversation_history = request.conversation_history
+    messages = [{"role": "system", "content": request.context}]
+    for msg in conversation_history:
+        messages.append(msg)
+    messages.append({"role": "user", "content": request.question})
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",  # Использование модели GPT-4
+            messages=messages
+        )
+        answer = response.choices[0].message.content.strip()
+    except Exception as e:
+        answer = None
+        print(f"Request error: {e}")
+        return HTTPException(status_code=500, detail="Error While request to gpt")
+
     return JSONResponse(
         {
         "message": "Question received successfully",
