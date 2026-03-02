@@ -49,17 +49,20 @@ def verify_api_key(api_key: str = Header(...)):
 class QuestionRequest(BaseModel):
     question: str
     lang: str
+    key: str | None
 
 
 class FreeQuestionRequest(BaseModel):
     question: str
     context: str
+    key: str | None
 
 
 class QuestionWithHistory(BaseModel):
     question: str
     context: str
     conversation_history: list[dict]
+    key: str | None
 
 
 class ImageRequest(BaseModel):
@@ -73,8 +76,11 @@ async def home():
 
 @app.post("/question")
 async def submit_question(request: QuestionRequest, api_key: str = Depends(verify_api_key)):
-    gpt_key = read_config('GPT_KEY').strip()
-    client = OpenAI(api_key=gpt_key)
+    if not request.key:
+        gpt_key = read_config('GPT_KEY').strip()
+        client = OpenAI(api_key=gpt_key)
+    else:
+        client = OpenAI(api_key=request.key.strip())
     gemini_key = read_config('GEMINI_KEY').strip()
     #genai.configure(api_key=gemini_key)
     #model = genai.GenerativeModel('gemini-1.0-pro')
@@ -149,8 +155,11 @@ async def submit_question(request: QuestionRequest, api_key: str = Depends(verif
 
 @app.post('/free_question')
 async def free_question(request: FreeQuestionRequest, api_key: str = Depends(verify_api_key)):
-    gpt_key = read_config('GPT_KEY').strip()
-    client = OpenAI(api_key=gpt_key)
+    if not request.key:
+        gpt_key = read_config('GPT_KEY').strip()
+        client = OpenAI(api_key=gpt_key)
+    else:
+        client = OpenAI(api_key=request.key.strip())
     gemini_key = read_config('GEMINI_KEY').strip()
     try:
         response = client.chat.completions.create(
@@ -198,8 +207,11 @@ async def free_question(request: FreeQuestionRequest, api_key: str = Depends(ver
 
 @app.post("/question_with_history")
 async def free_question_with_history(request: QuestionWithHistory, api_key: str = Depends(verify_api_key)):
-    gpt_key = read_config('GPT_KEY').strip()
-    client = OpenAI(api_key=gpt_key)
+    if not request.key:
+        gpt_key = read_config('GPT_KEY').strip()
+        client = OpenAI(api_key=gpt_key)
+    else:
+        client = OpenAI(api_key=request.key.strip())
     conversation_history = request.conversation_history
     messages = [{"role": "system", "content": request.context}]
     for msg in conversation_history:
